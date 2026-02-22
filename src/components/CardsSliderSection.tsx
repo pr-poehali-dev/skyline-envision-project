@@ -1,7 +1,7 @@
 import { useState } from "react"
-import { ChevronLeft, ChevronRight, Wifi, Snowflake } from "lucide-react"
+import { ChevronLeft, ChevronRight, Wifi, Snowflake, Plus, SnowflakeIcon } from "lucide-react"
 
-const cards = [
+const initialCards = [
   {
     id: 1,
     owner: "Миша Петров",
@@ -54,9 +54,19 @@ const cards = [
 
 export function CardsSliderSection() {
   const [active, setActive] = useState(0)
+  const [cards, setCards] = useState(initialCards)
+  const [topUp, setTopUp] = useState<number | null>(null)
 
   const prev = () => setActive((i) => (i === 0 ? cards.length - 1 : i - 1))
   const next = () => setActive((i) => (i === cards.length - 1 ? 0 : i + 1))
+
+  const toggleFreeze = (id: number) => {
+    setCards((prev) => prev.map((c) => (c.id === id ? { ...c, frozen: !c.frozen } : c)))
+  }
+
+  const handleTopUp = (id: number) => {
+    setTopUp(topUp === id ? null : id)
+  }
 
   const card = cards[active]
 
@@ -67,7 +77,7 @@ export function CardsSliderSection() {
         <p className="text-gray-400 text-sm">Все карты в одном месте — управляйте балансом и лимитами</p>
       </div>
 
-      <div className="flex flex-col items-center gap-8">
+      <div className="flex flex-col items-center gap-6">
         <div className="relative flex items-center gap-6 w-full justify-center">
           <button
             onClick={prev}
@@ -84,19 +94,22 @@ export function CardsSliderSection() {
               return (
                 <div
                   key={c.id}
-                  onClick={() => setActive(i)}
-                  className="absolute inset-0 transition-all duration-500 cursor-pointer"
+                  onClick={() => !isActive && setActive(i)}
+                  className="absolute inset-0 transition-all duration-500"
                   style={{
                     transform: `translateX(${offset * 60}px) scale(${isActive ? 1 : 0.88}) translateZ(0)`,
                     opacity: isActive ? 1 : isAdjacent ? 0.45 : 0,
                     zIndex: isActive ? 10 : isAdjacent ? 5 : 0,
                     pointerEvents: isActive ? "auto" : isAdjacent ? "auto" : "none",
+                    cursor: isActive ? "default" : "pointer",
                   }}
                 >
-                  <div className={`rounded-3xl bg-gradient-to-br ${c.color} p-6 h-48 flex flex-col justify-between shadow-2xl`}>
+                  <div className={`rounded-3xl bg-gradient-to-br ${c.color} p-6 h-48 flex flex-col justify-between shadow-2xl relative overflow-hidden`}>
                     {c.frozen && (
-                      <div className="absolute top-4 right-4 flex items-center gap-1 rounded-full bg-black/30 px-2 py-0.5 text-xs text-white backdrop-blur-sm">
-                        <Snowflake className="h-3 w-3" /> Заморожена
+                      <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px] rounded-3xl z-10 flex items-center justify-center">
+                        <div className="flex items-center gap-2 rounded-full bg-black/50 px-4 py-1.5 text-sm text-white">
+                          <Snowflake className="h-4 w-4" /> Карта заморожена
+                        </div>
                       </div>
                     )}
                     <div className="flex items-start justify-between">
@@ -135,7 +148,54 @@ export function CardsSliderSection() {
           </button>
         </div>
 
-        <div className="flex gap-2 mt-2">
+        {/* Кнопки управления активной картой */}
+        <div className="flex gap-3 w-full max-w-sm">
+          <button
+            onClick={() => handleTopUp(card.id)}
+            className="flex-1 flex items-center justify-center gap-2 rounded-2xl bg-green-600 hover:bg-green-500 text-white text-sm font-medium py-3 transition-colors"
+          >
+            <Plus className="h-4 w-4" /> Пополнить
+          </button>
+          <button
+            onClick={() => toggleFreeze(card.id)}
+            className={`flex-1 flex items-center justify-center gap-2 rounded-2xl text-sm font-medium py-3 transition-colors border ${
+              card.frozen
+                ? "bg-blue-500/10 border-blue-500/40 text-blue-400 hover:bg-blue-500/20"
+                : "bg-[#1a1a1a] border-[#262626] text-gray-400 hover:text-white hover:bg-[#222]"
+            }`}
+          >
+            <SnowflakeIcon className="h-4 w-4" />
+            {card.frozen ? "Разморозить" : "Заморозить"}
+          </button>
+        </div>
+
+        {/* Форма пополнения */}
+        {topUp === card.id && (
+          <div className="w-full max-w-sm rounded-2xl bg-[#141414] border border-[#262626] p-4 space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
+            <p className="text-sm text-white font-medium">Пополнить карту — {card.owner.split(" ")[0]}</p>
+            <div className="flex items-center rounded-xl bg-[#0f0f0f] border border-[#262626] px-3 py-2.5">
+              <span className="text-gray-500 mr-2 text-sm">₽</span>
+              <input
+                type="number"
+                placeholder="Введите сумму"
+                className="flex-1 bg-transparent text-white placeholder-gray-600 outline-none text-sm"
+                autoFocus
+              />
+            </div>
+            <div className="flex gap-2">
+              {[100, 500, 1000].map((a) => (
+                <button key={a} className="flex-1 rounded-lg bg-[#1a1a1a] border border-[#262626] text-gray-400 hover:text-white text-xs py-1.5 transition-colors">
+                  +{a} ₽
+                </button>
+              ))}
+            </div>
+            <button className="w-full rounded-xl bg-green-600 hover:bg-green-500 text-white text-sm font-medium py-2.5 transition-colors">
+              Перевести
+            </button>
+          </div>
+        )}
+
+        <div className="flex gap-2">
           {cards.map((_, i) => (
             <button
               key={i}
@@ -161,7 +221,7 @@ export function CardsSliderSection() {
               </div>
               <div className="text-left min-w-0">
                 <p className="text-xs font-medium truncate">{c.owner.split(" ")[0]}</p>
-                <p className="text-xs text-gray-600">{c.age}</p>
+                <p className={`text-xs ${c.frozen ? "text-blue-400" : "text-gray-600"}`}>{c.frozen ? "❄️ заморожена" : c.age}</p>
               </div>
             </button>
           ))}
